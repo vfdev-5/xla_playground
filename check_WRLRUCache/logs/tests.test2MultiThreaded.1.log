@@ -1,0 +1,7 @@
+test2MultiThreaded (__main__.WeakrefLRUCacheTest.test2MultiThreaded) ... ok
+test2MultiThreaded_multi_threaded (__main__.WeakrefLRUCacheTest.test2MultiThreaded_multi_threaded) ... ok
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.104s
+
+OK

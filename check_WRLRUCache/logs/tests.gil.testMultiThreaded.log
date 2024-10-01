@@ -1,0 +1,6 @@
+testMultiThreaded (__main__.WeakrefLRUCacheTest.testMultiThreaded) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.051s
+
+OK

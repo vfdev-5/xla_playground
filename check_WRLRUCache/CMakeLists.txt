@@ -47,7 +47,7 @@ find_package(absl REQUIRED)
 # Compile extension module with size optimization and add 'wrlru_cache_lib'
 nanobind_add_module(
     wrlru_cache_ext
-    FREE_THREADED
+#     FREE_THREADED
     binding_all.cpp
 )
 #    binding.cpp

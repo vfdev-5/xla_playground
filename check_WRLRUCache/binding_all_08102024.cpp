@@ -350,6 +350,9 @@ class WeakrefLRUCache : public std::enable_shared_from_this<WeakrefLRUCache> {
           if (cache == nullptr) {
             return;
           }
+#ifdef NB_FREE_THREADED
+          absl::MutexLock lock(&cache->mu_);
+#endif
           // The object the reference referred to is now in the process of being
           // destroyed, so we cannot refer to its contents. Python weakref
           // objects compare based on identity if the object they refer to is
@@ -365,21 +368,22 @@ class WeakrefLRUCache : public std::enable_shared_from_this<WeakrefLRUCache> {
         });
     nb::weakref weakref = nb::weakref(weakref_key, weakref_gc_callback);
     WeakrefCacheKey wrcache_key{weakref, wrcache_hash};
-    std::shared_ptr<Cache> cache_ptr = GetCache(wrcache_key);
-    Cache& cache = *cache_ptr;
-    ++total_queries_;
 
     bool inserted = false;
     std::shared_ptr<CacheEntry> entry;
     {
       // Because the gil can be released during cache insertion, this forces
       // the lock order to be mu_ then gil so we must release the gil first.
+      // In free-threading  this operation also temporarily releases all
+      // nb argument locks held by the current thread.
       nb::gil_scoped_release release;
       // Acquire a mutex to avoid problems where the gil is released during
       // cache insertion and then a second thread invalidates the cache order.
       mu_.Lock();
     }
     {
+      std::shared_ptr<Cache> cache_ptr = GetCache(wrcache_key);
+      Cache& cache = *cache_ptr;
       // GetOrCreateIfAbsent calls into Python hash and equality functions,
       // which may throw exceptions. The use of absl::Cleanup ensures mu_ is
       // released if that happens.
@@ -389,10 +393,13 @@ class WeakrefLRUCache : public std::enable_shared_from_this<WeakrefLRUCache> {
         inserted = true;
         return std::make_shared<CacheEntry>();
       });
+      ++total_queries_;
+      if (inserted) {
+        ++misses_;
+      }
     }
     if (!entry->completed.HasBeenNotified()) {
       if (inserted) {
-        ++misses_;
         absl::Cleanup notify = [&] { entry->completed.Notify(); };
         entry->result = fn_(weakref_key, *args, **kwargs);
         entry->has_result = true;
@@ -413,7 +420,8 @@ class WeakrefLRUCache : public std::enable_shared_from_this<WeakrefLRUCache> {
     if (entry->has_result) {
       return entry->result;
     } else {
-      ++misses_;
+      // Here we should increment ++misses_ with acquired mutex
+      // but we skip that due to the lock cost and as misses can be less precise.
       return fn_(weakref_key, *args, **kwargs);
     }
   }
@@ -449,7 +457,7 @@ class WeakrefLRUCache : public std::enable_shared_from_this<WeakrefLRUCache> {
     deferred_deletes.clear();
   }
 
-private:
+protected:
   std::shared_ptr<Cache> GetCache(WeakrefCacheKey key) {
     WeakrefCacheValue& value = entries_[key];
     if (!value.cache) {
@@ -475,8 +483,8 @@ void BuildWeakrefLRUCacheAPI(nb::module_& m) {
                                   nb::is_weak_referenceable())
           .def("__call__", &WeakrefLRUCache::Call)
           .def("cache_keys", &WeakrefLRUCache::GetKeys)
-          .def("cache_info", &WeakrefLRUCache::GetCacheInfo)
-          .def("cache_clear", &WeakrefLRUCache::Clear);
+          .def("cache_info", &WeakrefLRUCache::GetCacheInfo, nb::lock_self())
+          .def("cache_clear", &WeakrefLRUCache::Clear, nb::lock_self());
   nb::class_<WeakrefLRUCache::CacheInfo>(weakref_lru_cache,
                                          "WeakrefLRUCacheInfo")
       .def_ro("hits", &WeakrefLRUCache::CacheInfo::hits)

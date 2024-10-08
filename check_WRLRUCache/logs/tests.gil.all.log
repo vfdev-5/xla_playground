@@ -2,8 +2,6 @@ test2MultiThreaded (__main__.WeakrefLRUCacheTest.test2MultiThreaded) ... ok
 test3MultiThreaded (__main__.WeakrefLRUCacheTest.test3MultiThreaded) ... ok
 testCrashingKey (__main__.WeakrefLRUCacheTest.testCrashingKey) ... ok
 testCrashingKey_multi_threaded (__main__.WeakrefLRUCacheTest.testCrashingKey_multi_threaded) ... ok
-testGCKeys (__main__.WeakrefLRUCacheTest.testGCKeys) ... ok
-testGCKeys_multi_threaded (__main__.WeakrefLRUCacheTest.testGCKeys_multi_threaded) ... ok
 testGetKeys (__main__.WeakrefLRUCacheTest.testGetKeys) ... ok
 testGetKeys_multi_threaded (__main__.WeakrefLRUCacheTest.testGetKeys_multi_threaded) ... ok
 testKwargsDictOrder (__main__.WeakrefLRUCacheTest.testKwargsDictOrder) ... ok
@@ -15,6 +13,6 @@ testPrintingStats (__main__.WeakrefLRUCacheTest.testPrintingStats) ... ok
 testPrintingStats_multi_threaded (__main__.WeakrefLRUCacheTest.testPrintingStats_multi_threaded) ... ok
 
 ----------------------------------------------------------------------
-Ran 15 tests in 0.227s
+Ran 13 tests in 1.185s
 
 OK
